@@ -7,6 +7,7 @@ from datetime import datetime
 import pandas as pd
 import os
 import argparse
+import subprocess
 
 from dataset.cifar100 import get_cifar100_dataloaders_test
 from helper.loops import validate
@@ -70,10 +71,14 @@ def main(opt):
     mem_percent_list = []
     # cpu_freq_list = []
     mem_use_list = []
+    
     # cuda_power_list = []
     # gpu_percent_list = []
     # cuda_freq_list = []
     # cuda_mem_list = []
+    
+    model_size_list = []
+    model_param_list = []
     
     
     
@@ -89,19 +94,30 @@ def main(opt):
         
         latency_data, acc_data = inference(model, test_loader, opt, n_data)
         
+        # CPU & Memory ------------------------
         cpu_percent_list.append(round(p.cpu_percent(interval=None)/psutil.cpu_count(), 2))
         mem_percent_list.append(round(p.memory_percent(), 2))
         
         # cpu_freq_list.append(round(p.cpu, 3))
         mem_use_list.append(round(((p.memory_full_info().vms) / 1024 ** 3), 2)) # In MB
         
+        latency_list.append(latency_data)
+        acc_list.append(round(acc_data, 3))
+        
+        # GPU Monitoring -------------------------
         # cuda_power_list.append(round(cuda.power_draw()/1000, 2)) # In mW, converted to Watts
         # cuda_percent_list.append(cuda.utilization()) # In %
         # cuda_mem_list.append(cuda.memory_usage()) # In %
-        # cuda_freq_list.append(cuda.clock_rate()) # In Hz 
+        # cuda_freq_list.append(cuda.clock_rate()) # In Hz
         
-        latency_list.append(latency_data)
-        acc_list.append(round(acc_data, 3))
+        
+        # Model MetaData --------------
+        size = os.path.getsize(opt.path)
+        size = round(size/(1<<20), 2) # Convert to MegaBytes
+        model_size_list.append(size)
+        
+        param_count = sum(p.numel() for p in model.parameters())
+        model_param_list.append(param_count)
     
     print(f'Total images\t\t: {n_data}')
     
@@ -113,16 +129,20 @@ def main(opt):
         # 'cpu_freq' : cpu_freq_list[1:],
         'mem_percent' : mem_percent_list[1:],
         'mem_use_MB' : mem_use_list[1:],
+        
         # 'gpu_percent' : cuda_percent_list[1:],
         # 'gpu_freq' : cuda_freq_list[1:],
         # 'gpu_mem_percent' : cuda_mem_list[1:],
-        # 'gpu_power_w' : cuda_power_list[1:]
+        # 'gpu_power_w' : cuda_power_list[1:],
+        
+        'model_size_MB' : model_size_list[1:],
+        'model_param_count' : model_param_list[1:]
     }
     
     df = pd.DataFrame(data)
     
     if opt.save == 1:
-    
+
         if not os.path.isdir(f'./benchmark/result/{model_name[0]}'):
             os.makedirs(f'./benchmark/result/{model_name[0]}')
         
