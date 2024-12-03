@@ -135,8 +135,7 @@ def main(opt):
         # 'gpu_mem_percent' : cuda_mem_list[1:],
         # 'gpu_power_w' : cuda_power_list[1:],
         
-        'model_size_MB' : model_size_list[1:],
-        'model_param_count' : model_param_list[1:]
+      
     }
     
     df = pd.DataFrame(data)

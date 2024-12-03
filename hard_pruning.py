@@ -44,6 +44,8 @@ def main(args):
         imp = tp.importance.MagnitudeImportance(p=2)
     elif prune_method == 'random':
         imp = tp.importance.RandomImportance()
+    elif prune_method == 'grp_l1':
+        imp = tp.importance.GroupNormImportance(p=1, normalizer=None, group_reduction='mean')
     else:
         NotImplementedError
 
